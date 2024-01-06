@@ -269,6 +269,7 @@ int main() {
         // 定位
         int location = locate(0, rec_code);
         detect_and_draw_orb_features(resize_img);
+        detect_and_draw_orb_features(frame);
         // 输出结果
         cout << "----------------------------------" << endl;
         cout << "Frame: " << frameCount << endl;
@@ -284,6 +285,7 @@ int main() {
         // 显示结果
         imshow("Resize Image", resize_img);
         imshow("rec_img", rec_img_bw);
+        imshow("Frame", frame);
         char key = static_cast<char>(waitKey(20));
         if (key == 27) break; // ESC to exit
 
