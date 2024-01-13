@@ -354,4 +354,5 @@ CMakeFiles/FigureProject.dir/figure.cpp.o: \
  /usr/local/include/opencv2/viz/types.hpp \
  /usr/local/include/opencv2/viz/widgets.hpp \
  /usr/local/include/opencv2/viz/viz3d.hpp \
- /usr/local/include/opencv2/viz/vizcore.hpp
+ /usr/local/include/opencv2/viz/vizcore.hpp \
+ /usr/local/include/opencv2/imgproc/imgproc.hpp

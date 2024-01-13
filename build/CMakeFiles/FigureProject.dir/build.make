@@ -73,7 +73,7 @@ CMakeFiles/FigureProject.dir/figure.cpp.o: CMakeFiles/FigureProject.dir/flags.ma
 CMakeFiles/FigureProject.dir/figure.cpp.o: ../figure.cpp
 CMakeFiles/FigureProject.dir/figure.cpp.o: CMakeFiles/FigureProject.dir/compiler_depend.ts
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/home/yintruder/MonoProject/figure_identify/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_1) "Building CXX object CMakeFiles/FigureProject.dir/figure.cpp.o"
-	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/FigureProject.dir/figure.cpp.o -MF CMakeFiles/FigureProject.dir/figure.cpp.o.d -o CMakeFiles/FigureProject.dir/figure.cpp.o -c /home/yintruder/MonoProject/figure_identify/figure.cpp
+	ccache /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/FigureProject.dir/figure.cpp.o -MF CMakeFiles/FigureProject.dir/figure.cpp.o.d -o CMakeFiles/FigureProject.dir/figure.cpp.o -c /home/yintruder/MonoProject/figure_identify/figure.cpp
 
 CMakeFiles/FigureProject.dir/figure.cpp.i: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Preprocessing CXX source to CMakeFiles/FigureProject.dir/figure.cpp.i"

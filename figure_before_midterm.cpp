@@ -1,10 +1,11 @@
 #include <opencv2/opencv.hpp>
-#include <opencv2/imgproc/imgproc.hpp>
 #include <vector>
 #include <algorithm>
 #include <iostream>
 #include <chrono>
-#include <map>
+#include <opencv2/core/core.hpp>
+#include <opencv2/highgui/highgui.hpp>
+#include <opencv2/imgproc/imgproc.hpp>
 using namespace cv;
 using namespace std;
 
@@ -14,16 +15,18 @@ struct Line {
 };
 
 // 预处理函数
-pair<Mat, Mat> pre_proc(const Rect& roi, const Mat& src) {
+cv::Mat pre_proc(const Rect& roi, const Mat& src) {
     // 缩放图像到固定尺寸
+    /*
     Mat resize;
-    cv::resize(src, resize, Size(480, 640), 0, 0, INTER_LINEAR);
+    cv::resize(src, resize, Size(640, 480), 0, 0, INTER_LINEAR);
     
     // 复制resize到pre_img
-    Mat pre_img = resize.clone();
     
+    */
+    Mat pre_img = src.clone();
     // 画出ROI区域
-    rectangle(resize, roi, Scalar(0, 255, 0), 2);
+    rectangle(pre_img, roi, Scalar(0, 255, 0), 2);
     
     // 反色处理
     bitwise_not(pre_img, pre_img);
@@ -36,10 +39,10 @@ pair<Mat, Mat> pre_proc(const Rect& roi, const Mat& src) {
     // 裁剪ROI并缩放
     Mat img_roi = blue_channel(roi);
     Mat code;
-    cv::resize(img_roi, code, Size(400, 320), 0, 0, INTER_LINEAR);
+    //cv::resize(img_roi, code, Size(src.cols, 640), 0, 0, INTER_LINEAR);
     
     // 二值化
-    threshold(code, code, 150, 255, THRESH_BINARY);
+    threshold(img_roi, code, 150, 255, THRESH_BINARY);
     
     // 降噪处理
     Mat kernel = getStructuringElement(MORPH_RECT, Size(5, 5));
@@ -48,16 +51,17 @@ pair<Mat, Mat> pre_proc(const Rect& roi, const Mat& src) {
     erode(code, rec, h_kernel);
     erode(rec, rec, kernel);
     
-    return {resize, rec};
+    return rec;
 }
 void put_code(const Rect& roi, const string& num, const Point& loc, Mat& src1, Mat& src2) {
     // 计算在src1上的文本位置
-    Point p1(loc.x - 20, loc.y);
-    putText(src1, num, p1, FONT_HERSHEY_TRIPLEX, 0.5, Scalar(255, 255, 255), 1, LINE_AA);
+    Point p1(loc.x - 10, loc.y);
+    putText(src1, num, p1, FONT_HERSHEY_TRIPLEX, 0.5, Scalar(255, 0, 0), 1, LINE_AA);
 
     // 计算在src2上的文本位置
     Point p2(static_cast<int>(roi.x + loc.x * (roi.width / 400.0) - 20), loc.y + roi.y);
-    putText(src2, num, p2, FONT_HERSHEY_TRIPLEX, 0.5, Scalar(255, 255, 255), 1, LINE_AA);
+    putText(src2, num, p2, FONT_HERSHEY_TRIPLEX, 0.5, Scalar(255, 0, 0), 1, LINE_AA);
+
 }
 void detect_and_draw_orb_features(Mat& img) {
     // 创建ORB特征检测器
@@ -111,16 +115,44 @@ pair<vector<Line>, int> cluster(const vector<Vec4i>& lines) {
 }
 
 
+
+void cluster_and_set_threshold(vector<Line>& b, vector<int>& thresholds) {
+    // 计算每条线的宽度并转换为Mat格式
+    Mat data(b.size(), 1, CV_32F);
+    for (size_t i = 0; i < b.size(); ++i) {
+        int width = b[i].xr - b[i].xl;  // 计算线的宽度
+        data.at<float>(i) = static_cast<float>(width);
+    }
+
+    // 使用K-means聚类算法对线的宽度进行聚类
+    Mat labels, centers;
+    kmeans(data, 4, labels, TermCriteria(TermCriteria::EPS + TermCriteria::COUNT, 10, 1.0), 4, KMEANS_PP_CENTERS, centers);
+
+    // 将聚类中心点的宽度转换为vector<int>格式，并按从小到大的顺序排序
+    vector<int> centers_vec(4);
+    for (int i = 0; i < 4; ++i) {
+        centers_vec[i] = static_cast<int>(centers.at<float>(i));
+    }
+    sort(centers_vec.begin(), centers_vec.end());
+
+    // 设置阈值为相邻两个聚类中心点的宽度的平均值
+    thresholds.resize(3);
+    thresholds[0] = (centers_vec[0] + centers_vec[1]) / 2;
+    thresholds[1] = (centers_vec[1] + centers_vec[2]) / 2;
+    thresholds[2] = (centers_vec[2] + centers_vec[3]) / 2;
+}
 string code_rec(const Rect& roi, const vector<Line>& b, int cls_number, Mat& src1, Mat& src2) {
     string head;
     // 遍历所有的聚类直线
+    vector<int> thresholds;
+    cluster_and_set_threshold(const_cast<vector<Line>&>(b), thresholds);
     for (int i = 0; i < cls_number; ++i) {
         line(src1, Point(b[i].xl, b[i].centy), Point(b[i].xr, b[i].centy), Scalar(0, 255, 255), 3, LINE_AA);
         circle(src1, Point(b[i].centx, b[i].centy), 3, Scalar(0, 0, 255), 3);
         int width = b[i].xr - b[i].xl;
 
         if (b[i].centy > 120) {
-            if (width < 90) {
+            if (width < thresholds[0]) {
                 if (b[i].centx < 110) {
                     put_code(roi, "1", Point(b[i].xl, b[i].centy), src1, src2);
                     head += '1';
@@ -134,7 +166,7 @@ string code_rec(const Rect& roi, const vector<Line>& b, int cls_number, Mat& src
                     put_code(roi, "4", Point(b[i].xl, b[i].centy), src1, src2);
                     head += '4';
                 }
-            } else if (width < 170) {
+            } else if (width < thresholds[1]) {
                 if (b[i].centx < 170) {
                     put_code(roi, "5", Point(b[i].xl, b[i].centy), src1, src2);
                     head += '5';
@@ -145,7 +177,7 @@ string code_rec(const Rect& roi, const vector<Line>& b, int cls_number, Mat& src
                     put_code(roi, "7", Point(b[i].xl, b[i].centy), src1, src2);
                     head += '7';
                 }
-            } else if (width < 270) {
+            } else if (width < thresholds[2]) {
                 if (b[i].centx < 220) {
                     put_code(roi, "8", Point(b[i].xl, b[i].centy), src1, src2);
                     head += '8';
@@ -170,93 +202,56 @@ int locate(const int x_cut, const string& head) {
             size_t found = pi.find(head.substr(i, 5));
             if (found != string::npos) {
                 location = static_cast<int>(found);
+                // 找到匹配后，向两边扩展搜索
+                int left = i, right = i + 4;
+                while (left > 0 && pi[found - 1] == head[left - 1]) {
+                    --found;
+                    --left;
+                }
+                while (right < head.length() - 1 && pi[found + 5] == head[right + 1]) {
+                    ++right;
+                }
                 break;
             }
         }
     }
     return location - x_cut;
 }
-// 创建一个从代号到坐标的映射
-
-void create_location_map(std::map<int, cv::Point2f>& location_map) {
-    // 从1-40是从(9,175)到(424,153)的直线
-    for (int i = 1; i <= 40; ++i) {
-        float x = 9.0f + (i - 1) * (415.0f / 39.0f);  // Linear interpolation
-        float y = 175.0f - (i - 1) * (22.0f / 39.0f);  // Linear interpolation
-        location_map[i] = cv::Point2f(x, y);
-    }
-
-    // 从40-55是从(424,153)到(470,118)的圆曲线
-    for (int i = 41; i <= 55; ++i) {
-        float x = 424.0f + (i - 40) * (46.0f / 14.0f);  // Linear interpolation for x
-        float y = 153.0f - (i - 40)*(i-40) *0.16;  // Sinusoidal interpolation for y
-        location_map[i] = cv::Point2f(x, y);
-    }
-
-    // 从55-76是从(470,118)到(418,3)的直线
-    for (int i = 56; i <= 76; ++i) {
-        float x = 470.0f - (i - 55) * (52.0f / 20.0f);  // Linear interpolation
-        float y = 118.0f - (i - 55) * (115.0f / 20.0f);  // Linear interpolation
-        location_map[i] = cv::Point2f(x, y);
-    }
-}
 Rect roi_track(const Rect& roi, vector<Line>& lines) {
+    // 获取ROI的四个边界
     int x_min = roi.x;
     int x_max = roi.x + roi.width;
     int y_min = roi.y;
     int y_max = roi.y + roi.height;
 
-    // ROI提取并自动调整
-    sort(lines.begin(), lines.end(), [](const Line& a, const Line& b) { return a.xl < b.xl; });
-    int x_min_nx = x_min;
-    if (x_min == 40) {
-        x_min_nx = round(lines[0].xl * (x_max - x_min) / 400) + x_min - 20;
-    } else {
-        if (lines[0].xl < 20) {
-            x_min_nx = x_min - 10;
-        } else if (lines[0].xl > 40) {
-            x_min_nx = x_min + 10;
-        }
+    // 获取线段的x坐标的最小值和最大值
+    auto x_comp = [](const Line& a, const Line& b) { return a.xl < b.xl; };
+    int x_min_line = min_element(lines.begin(), lines.end(), x_comp)->xl;
+    int x_max_line = max_element(lines.begin(), lines.end(), x_comp)->xr;
+
+    // 获取线段的y坐标的最小值和最大值
+    auto y_comp = [](const Line& a, const Line& b) { return a.centy < b.centy; };
+    int y_min_line = min_element(lines.begin(), lines.end(), y_comp)->centy;
+    int y_max_line = max_element(lines.begin(), lines.end(), y_comp)->centy;
+
+    // 设置阈值，当线段距离ROI边界的距离小于或大于这个阈值时，调整ROI
+    int threshold = 5;  // 可以根据实际情况调整
+
+    // 根据线段的坐标调整ROI的边界
+    if (x_min_line < threshold || x_min_line > threshold * 2) {
+        x_min = std::max(0, x_min + x_min_line - threshold);
     }
-    if (x_min_nx < 0) {
-        x_min_nx = 0;
+    if (roi.width - x_max_line < threshold || roi.width - x_max_line > threshold * 2) {
+        x_max = x_min + x_max_line + threshold;
+    }
+    if (y_min_line < threshold || y_min_line > threshold * 2) {
+        y_min = std::max(0, y_min + y_min_line - threshold);
+    }
+    if (roi.height - y_max_line < threshold || roi.height - y_max_line > threshold * 2) {
+        y_max = y_min + y_max_line + threshold;
     }
 
-    sort(lines.begin(), lines.end(), [](const Line& a, const Line& b) { return a.xr > b.xr; });
-    int x_max_nx = x_max;
-    if (x_min == 40) {
-        x_max_nx = round(lines[0].xr * (x_max - x_min) / 400) + x_min + 20;
-    } else {
-        if (lines[0].xr > 380) {
-            x_max_nx = x_max + 10;
-        } else if (lines[0].xr < 360) {
-            x_max_nx = x_max - 10;
-        }
-    }
-    if (x_max_nx > 480) {
-        x_max_nx = 480;
-    }
-
-    sort(lines.begin(), lines.end(), [](const Line& a, const Line& b) { return a.centy > b.centy; });
-    int y_max_nx = y_max;
-    if (x_min == 40) {
-        y_max_nx = round(lines[0].centy * (y_max - y_min) / 320) + y_min + 15;
-    } else {
-        if (lines[0].centy > 310) {
-            y_max_nx = y_max + 10;
-        } else if (lines[0].centy < 300) {
-            y_max_nx = y_max - 10;
-        }
-    }
-    if (y_max_nx > 640) {
-        y_max_nx = 640;
-    }
-    int y_min_nx = y_max_nx - 320;
-    if (y_min_nx < 0) {
-        y_min_nx = 0;
-    }
-
-    return Rect(x_min_nx, y_min_nx, x_max_nx - x_min_nx, y_max_nx - y_min_nx);
+    return Rect(x_min, y_min, x_max - x_min, y_max - y_min);
 }
 int main() {
     // 视频准备
@@ -266,37 +261,33 @@ int main() {
         return -1;
     }
 
-    cv::Mat frame;
-    Rect roi(40, 220, 400, 320); // 初始ROI
-    cv::Mat map_img = cv::imread("map.png");  // 读取地图图片
+    Mat frame;
+    //计算frame的长宽
+    Rect roi(40, 220, 400, 320);
+
+    // 设置ROI为frame的下半区域
     int frameCount = 1;
-    std::map<int, cv::Point2f> location_map;
-    create_location_map(location_map);
     while (cap.read(frame)) {
         auto start = chrono::high_resolution_clock::now();
-
         // 预处理
-        pair<Mat, Mat> processed = pre_proc(roi, frame);
-        Mat& resize_img = processed.first;
-        Mat& rec_img_bw = processed.second;
+        cv::Mat rec_img_ROI ;
+        rec_img_ROI = pre_proc(roi, frame);
 
         // 霍夫变换
         vector<Vec4i> lines;
-        HoughLinesP(rec_img_bw, lines, 1, CV_PI / 180, 50, 50, 10);
+        HoughLinesP(rec_img_ROI, lines, 1, CV_PI / 180, 50, 50, 10);
 
         // 聚类
         pair<vector<Line>, int> clustering = cluster(lines);
         vector<Line>& cls_lines = clustering.first;
         int cls_num = clustering.second;
-        //detect_and_draw_orb_features(rec_img_bw);
+
         // 识别
-        string rec_code = code_rec(roi, cls_lines, cls_num, rec_img_bw,resize_img);
+        string rec_code = code_rec(roi, cls_lines, cls_num, rec_img_ROI,frame);
 
         // 定位
         int location = locate(0, rec_code);
-        //detect_and_draw_orb_features(resize_img);
-        //detect_and_draw_orb_features(frame);
-        
+        detect_and_draw_orb_features(frame);
         // 输出结果
         cout << "----------------------------------" << endl;
         cout << "Frame: " << frameCount << endl;
@@ -308,34 +299,23 @@ int main() {
         auto end = chrono::high_resolution_clock::now();
         chrono::duration<double> elapsed = end - start;
         cout << "Recognition time (sec): " << elapsed.count() / 1000 << endl;
-        // 显示结果
-        //imshow("Resize Image", resize_img);
-        imshow("rec_img", rec_img_bw);
-        std::string filename = "./figure/" + std::to_string(frameCount) + ".png";
-        cv::imwrite(filename, rec_img_bw);
 
-        //imshow("Frame", frame);
+        // 显示结果
+        imshow("rec_img", rec_img_ROI);
+        imshow("Frame", frame);
         char key = static_cast<char>(waitKey(20));
         if (key == 27) break; // ESC to exit
-        // 检查代号是否在映射中
-        if (location_map.count(location) > 0) {
-            // 在图像上绘制点
-            cv::circle(map_img, location_map[location], 5, cv::Scalar(0, 0, 255), -1);
-        }
 
-        // 显示图像
-        cv::imshow("Location", map_img);
-        std::string filename_map = "./map/" + std::to_string(frameCount) + ".png";
-        cv::imwrite(filename_map, map_img);
         // 更新ROI
-        roi = roi_track(roi, cls_lines);
-        
-        //绘制地图点
-        frameCount++;
-        //方便操作暂停一会
+        //获取输入图像resize_img的宽度和高度
        
+        //roi = roi_track(roi, cls_lines);
+        //等待5s
+        waitKey(500);
+        frameCount++;
     }
+
     cap.release();
-    cv::destroyAllWindows();
+    destroyAllWindows();
     return 0;
 }
