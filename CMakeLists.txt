@@ -1,20 +1,22 @@
-cmake_minimum_required(VERSION 3.10) # 设置CMake最低版本要求
-project(FigureProject) # 设置项目名称
+cmake_minimum_required(VERSION 3.10)
+project(CodeRecognizerProject)
 
-set(CMAKE_CXX_STANDARD 14) # 设置C++标准
+# 设置C++标准
+set(CMAKE_CXX_STANDARD 14)
+set(CMAKE_CXX_STANDARD_REQUIRED True)
 
-
-
-find_program(CCACHE_FOUND ccache)
-if(CCACHE_FOUND)
-    set_property(GLOBAL PROPERTY RULE_LAUNCH_COMPILE ccache)
-    set_property(GLOBAL PROPERTY RULE_LAUNCH_LINK ccache)
-endif(CCACHE_FOUND)
+# OpenCV的查找和包含
 find_package(OpenCV REQUIRED)
 include_directories(${OpenCV_INCLUDE_DIRS})
 
-# 添加可执行文件
-# 第一个参数是可执行文件的名称
-# 第二个参数是你的源文件
-add_executable(FigureProject figure.cpp)
-target_link_libraries(FigureProject ${OpenCV_LIBS})
+# 包含头文件目录
+include_directories(include)
+
+# 添加src目录下的源文件
+aux_source_directory(src SRC_LIST)
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR})
+# 生成可执行文件
+add_executable(CodeRecognizerExample example/main.cpp ${SRC_LIST})
+
+# 链接OpenCV库
+target_link_libraries(CodeRecognizerExample ${OpenCV_LIBS})

@@ -1,3 +1,3 @@
-/home/yintruder/MonoProject/figure_identify/build/CMakeFiles/FigureProject.dir
+/home/yintruder/MonoProject/figure_identify/build/CMakeFiles/CodeRecognizerExample.dir
 /home/yintruder/MonoProject/figure_identify/build/CMakeFiles/edit_cache.dir
 /home/yintruder/MonoProject/figure_identify/build/CMakeFiles/rebuild_cache.dir

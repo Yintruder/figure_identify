@@ -117,41 +117,65 @@ depend:
 .PHONY : depend
 
 #=============================================================================
-# Target rules for targets named FigureProject
+# Target rules for targets named CodeRecognizerExample
 
 # Build rule for target.
-FigureProject: cmake_check_build_system
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 FigureProject
-.PHONY : FigureProject
+CodeRecognizerExample: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 CodeRecognizerExample
+.PHONY : CodeRecognizerExample
 
 # fast build rule for target.
-FigureProject/fast:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/FigureProject.dir/build.make CMakeFiles/FigureProject.dir/build
-.PHONY : FigureProject/fast
+CodeRecognizerExample/fast:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/CodeRecognizerExample.dir/build.make CMakeFiles/CodeRecognizerExample.dir/build
+.PHONY : CodeRecognizerExample/fast
 
-figure.o: figure.cpp.o
-.PHONY : figure.o
+example/main.o: example/main.cpp.o
+.PHONY : example/main.o
 
 # target to build an object file
-figure.cpp.o:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/FigureProject.dir/build.make CMakeFiles/FigureProject.dir/figure.cpp.o
-.PHONY : figure.cpp.o
+example/main.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/CodeRecognizerExample.dir/build.make CMakeFiles/CodeRecognizerExample.dir/example/main.cpp.o
+.PHONY : example/main.cpp.o
 
-figure.i: figure.cpp.i
-.PHONY : figure.i
+example/main.i: example/main.cpp.i
+.PHONY : example/main.i
 
 # target to preprocess a source file
-figure.cpp.i:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/FigureProject.dir/build.make CMakeFiles/FigureProject.dir/figure.cpp.i
-.PHONY : figure.cpp.i
+example/main.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/CodeRecognizerExample.dir/build.make CMakeFiles/CodeRecognizerExample.dir/example/main.cpp.i
+.PHONY : example/main.cpp.i
 
-figure.s: figure.cpp.s
-.PHONY : figure.s
+example/main.s: example/main.cpp.s
+.PHONY : example/main.s
 
 # target to generate assembly for a file
-figure.cpp.s:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/FigureProject.dir/build.make CMakeFiles/FigureProject.dir/figure.cpp.s
-.PHONY : figure.cpp.s
+example/main.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/CodeRecognizerExample.dir/build.make CMakeFiles/CodeRecognizerExample.dir/example/main.cpp.s
+.PHONY : example/main.cpp.s
+
+src/CodeRecognizer.o: src/CodeRecognizer.cpp.o
+.PHONY : src/CodeRecognizer.o
+
+# target to build an object file
+src/CodeRecognizer.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/CodeRecognizerExample.dir/build.make CMakeFiles/CodeRecognizerExample.dir/src/CodeRecognizer.cpp.o
+.PHONY : src/CodeRecognizer.cpp.o
+
+src/CodeRecognizer.i: src/CodeRecognizer.cpp.i
+.PHONY : src/CodeRecognizer.i
+
+# target to preprocess a source file
+src/CodeRecognizer.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/CodeRecognizerExample.dir/build.make CMakeFiles/CodeRecognizerExample.dir/src/CodeRecognizer.cpp.i
+.PHONY : src/CodeRecognizer.cpp.i
+
+src/CodeRecognizer.s: src/CodeRecognizer.cpp.s
+.PHONY : src/CodeRecognizer.s
+
+# target to generate assembly for a file
+src/CodeRecognizer.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/CodeRecognizerExample.dir/build.make CMakeFiles/CodeRecognizerExample.dir/src/CodeRecognizer.cpp.s
+.PHONY : src/CodeRecognizer.cpp.s
 
 # Help Target
 help:
@@ -161,10 +185,13 @@ help:
 	@echo "... depend"
 	@echo "... edit_cache"
 	@echo "... rebuild_cache"
-	@echo "... FigureProject"
-	@echo "... figure.o"
-	@echo "... figure.i"
-	@echo "... figure.s"
+	@echo "... CodeRecognizerExample"
+	@echo "... example/main.o"
+	@echo "... example/main.i"
+	@echo "... example/main.s"
+	@echo "... src/CodeRecognizer.o"
+	@echo "... src/CodeRecognizer.i"
+	@echo "... src/CodeRecognizer.s"
 .PHONY : help
 
 

@@ -63,7 +63,7 @@ CMAKE_BINARY_DIR = /home/yintruder/MonoProject/figure_identify/build
 # Directory level rules for the build root directory
 
 # The main recursive "all" target.
-all: CMakeFiles/FigureProject.dir/all
+all: CMakeFiles/CodeRecognizerExample.dir/all
 .PHONY : all
 
 # The main recursive "preinstall" target.
@@ -71,34 +71,34 @@ preinstall:
 .PHONY : preinstall
 
 # The main recursive "clean" target.
-clean: CMakeFiles/FigureProject.dir/clean
+clean: CMakeFiles/CodeRecognizerExample.dir/clean
 .PHONY : clean
 
 #=============================================================================
-# Target rules for target CMakeFiles/FigureProject.dir
+# Target rules for target CMakeFiles/CodeRecognizerExample.dir
 
 # All Build rule for target.
-CMakeFiles/FigureProject.dir/all:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/FigureProject.dir/build.make CMakeFiles/FigureProject.dir/depend
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/FigureProject.dir/build.make CMakeFiles/FigureProject.dir/build
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --progress-dir=/home/yintruder/MonoProject/figure_identify/build/CMakeFiles --progress-num=1,2 "Built target FigureProject"
-.PHONY : CMakeFiles/FigureProject.dir/all
+CMakeFiles/CodeRecognizerExample.dir/all:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/CodeRecognizerExample.dir/build.make CMakeFiles/CodeRecognizerExample.dir/depend
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/CodeRecognizerExample.dir/build.make CMakeFiles/CodeRecognizerExample.dir/build
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --progress-dir=/home/yintruder/MonoProject/figure_identify/build/CMakeFiles --progress-num=1,2,3 "Built target CodeRecognizerExample"
+.PHONY : CMakeFiles/CodeRecognizerExample.dir/all
 
 # Build rule for subdir invocation for target.
-CMakeFiles/FigureProject.dir/rule: cmake_check_build_system
-	$(CMAKE_COMMAND) -E cmake_progress_start /home/yintruder/MonoProject/figure_identify/build/CMakeFiles 2
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 CMakeFiles/FigureProject.dir/all
+CMakeFiles/CodeRecognizerExample.dir/rule: cmake_check_build_system
+	$(CMAKE_COMMAND) -E cmake_progress_start /home/yintruder/MonoProject/figure_identify/build/CMakeFiles 3
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 CMakeFiles/CodeRecognizerExample.dir/all
 	$(CMAKE_COMMAND) -E cmake_progress_start /home/yintruder/MonoProject/figure_identify/build/CMakeFiles 0
-.PHONY : CMakeFiles/FigureProject.dir/rule
+.PHONY : CMakeFiles/CodeRecognizerExample.dir/rule
 
 # Convenience name for target.
-FigureProject: CMakeFiles/FigureProject.dir/rule
-.PHONY : FigureProject
+CodeRecognizerExample: CMakeFiles/CodeRecognizerExample.dir/rule
+.PHONY : CodeRecognizerExample
 
 # clean rule for target.
-CMakeFiles/FigureProject.dir/clean:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/FigureProject.dir/build.make CMakeFiles/FigureProject.dir/clean
-.PHONY : CMakeFiles/FigureProject.dir/clean
+CMakeFiles/CodeRecognizerExample.dir/clean:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/CodeRecognizerExample.dir/build.make CMakeFiles/CodeRecognizerExample.dir/clean
+.PHONY : CMakeFiles/CodeRecognizerExample.dir/clean
 
 #=============================================================================
 # Special targets to cleanup operation of make.

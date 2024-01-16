@@ -15,26 +15,21 @@ struct Line {
 
 // 预处理函数
 pair<Mat, Mat> pre_proc(const Rect& roi, const Mat& src) {
-    // 缩放图像到固定尺寸
-    Mat resize;
-    cv::resize(src, resize, Size(480, 640), 0, 0, INTER_LINEAR);
+    // 将原始图像转换为灰度图像
+    Mat gray;
+    cvtColor(src, gray, COLOR_BGR2GRAY);
     
-    // 复制resize到pre_img
-    Mat pre_img = resize.clone();
+    // 复制gray到pre_img
+    Mat pre_img = gray.clone();
     
     // 画出ROI区域
-    rectangle(resize, roi, Scalar(0, 255, 0), 2);
+    rectangle(pre_img, roi, Scalar(0, 255, 0), 2);
     
     // 反色处理
     bitwise_not(pre_img, pre_img);
     
-    // 分离通道，只处理蓝色通道
-    vector<Mat> bgr_channels;
-    split(pre_img, bgr_channels);
-    Mat blue_channel = bgr_channels[0];
-    
     // 裁剪ROI并缩放
-    Mat img_roi = blue_channel(roi);
+    Mat img_roi = pre_img(roi);
     Mat code;
     cv::resize(img_roi, code, Size(400, 320), 0, 0, INTER_LINEAR);
     
@@ -48,7 +43,7 @@ pair<Mat, Mat> pre_proc(const Rect& roi, const Mat& src) {
     erode(code, rec, h_kernel);
     erode(rec, rec, kernel);
     
-    return {resize, rec};
+    return {pre_img, rec};
 }
 void put_code(const Rect& roi, const string& num, const Point& loc, Mat& src1, Mat& src2) {
     // 计算在src1上的文本位置
@@ -270,6 +265,7 @@ int main() {
     Rect roi(40, 220, 400, 320); // 初始ROI
     cv::Mat map_img = cv::imread("map.png");  // 读取地图图片
     int frameCount = 1;
+    //创建初始空地图
     std::map<int, cv::Point2f> location_map;
     create_location_map(location_map);
     while (cap.read(frame)) {

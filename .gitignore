@@ -1,4 +1,6 @@
 map
 build
 frames
-figure
+output/figure
+output/map
+
