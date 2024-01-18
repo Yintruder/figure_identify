@@ -33,8 +33,7 @@ int main() {
         int location =recognizer.getLocation();
 
         cout << "Location: " << (location < 0 ? "None" : to_string(location)) << endl;
-        waitKey(1000);
-
+        //waitKey(5000);
         // 按ESC退出
         char key = static_cast<char>(waitKey(20));
         if (key == 27) break;

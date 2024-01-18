@@ -15,8 +15,58 @@ CodeRecognizer::CodeRecognizer() {
     create_location_map();
     rightmost_line_x = 0;
     location=0;
+    yolo_net = cv::dnn::readNetFromONNX("/home/yintruder/MonoProject/figure_identify/models/best.onnx");
+    yolo_net.setPreferableBackend(cv::dnn::DNN_BACKEND_OPENCV);
+    yolo_net.setPreferableTarget(cv::dnn::DNN_TARGET_CPU);
+    float yolo_conthreshold = 0.5;
+    
+}
+Rect CodeRecognizer::yolo_detect_and_return_roi(const cv::Mat& src,float blob_size = 640.0) {
+    // 创建blob
+    double scaleRatioWidth = static_cast<double>(src.cols) / blob_size;
+    double scaleRatioHeight = static_cast<double>(src.rows) / blob_size;
+    cv::Mat blob;
+    cv::dnn::blobFromImage(src, blob, 1/255.0, cv::Size(blob_size,blob_size), Scalar(0,0,0), true, false);
 
+    // 设置网络输入
+    CodeRecognizer::yolo_net.setInput(blob);
 
+    // 进行前向传播，获取输出
+    cv::Mat outs;
+    outs = yolo_net.forward();
+    //对结果后处理
+    std::vector<Rect> boxes;
+    std::vector<float> confidences;
+    cv::Mat det_output(outs.size[1], outs.size[2], CV_32F, outs.ptr<float>());
+    std::cout<<"det_output:"<<det_output.size<<std::endl;
+    
+    for (int i = 0; i < det_output.cols; ++i) {
+        cv::Mat column = det_output.col(i);
+        float x = column.at<float>(0, 0);
+        float y = column.at<float>(1, 0);
+        float w = column.at<float>(2, 0);
+        float h = column.at<float>(3, 0);
+        float confidence = column.at<float>(4, 0);
+        if (confidence > yolo_conthreshold) { // 置信度阈值
+            int left = static_cast<int>((x - w / 2) * scaleRatioWidth);
+            int top = static_cast<int>((y - h / 2) * scaleRatioHeight);
+            int width = static_cast<int>(w * scaleRatioWidth);
+            int height = static_cast<int>(h * scaleRatioHeight);
+            boxes.push_back(Rect(left, top, width, height));
+            confidences.push_back(confidence);
+        }
+        
+    }
+    // 应用NMS
+    std::vector<int> indices;
+    cv::dnn::NMSBoxes(boxes, confidences, 0.5, 0.4, indices); // NMS阈值
+    // 选择最高置信度的边界框作为ROI
+    if (!indices.empty()) {
+    int idx = indices[0];
+    return boxes[idx];
+    }
+    return Rect(); // 如果没有检测到任何对象，则返回空矩形
+    
 }
 
 void CodeRecognizer::create_location_map() {
@@ -53,24 +103,26 @@ pair<Mat, Mat> CodeRecognizer::pre_proc(const Rect& roi, const Mat& src) {
     // 画出ROI区域
     rectangle(pre_img, roi, Scalar(0, 255, 0), 2);
     
+
     // 反色处理
     //bitwise_not(pre_img, pre_img);
     
     // 裁剪ROI并缩放
     Mat img_roi = pre_img(roi);
     Mat code;
-    cv::resize(img_roi, code, Size(400, 320), 0, 0, INTER_LINEAR);
+    cv::resize(img_roi, code, Size(400, 640), 0, 0, INTER_LINEAR);
     
     // 二值化
-    threshold(code, code, 150, 255, THRESH_BINARY);
-    
+    threshold(code, code, 210, 255, THRESH_BINARY);
+    imshow("code",code);
     // 降噪处理
-    Mat kernel = getStructuringElement(MORPH_RECT, Size(5, 5));
+    Mat kernel = getStructuringElement(MORPH_RECT, Size(20, 20));
     Mat h_kernel = getStructuringElement(MORPH_RECT, Size(src.cols / 16, 1));
     Mat rec;
     erode(code, rec, h_kernel);
     erode(rec, rec, kernel);
-    
+    dilate(rec, rec, kernel);
+    dilate(rec, rec, h_kernel);
     return {pre_img, rec};
 }
 
@@ -80,8 +132,8 @@ void CodeRecognizer::put_code(const Rect& roi, const string& num, const Point& l
     putText(src1, num, p1, FONT_HERSHEY_TRIPLEX, 0.5, Scalar(255, 255, 255), 1, LINE_AA);
 
     // 计算在src2上的文本位置
-    Point p2(static_cast<int>(roi.x + loc.x * (roi.width / 400.0) - 20), loc.y + roi.y);
-    putText(src2, num, p2, FONT_HERSHEY_TRIPLEX, 0.5, Scalar(255, 255, 255), 1, LINE_AA);
+    //Point p2(static_cast<int>(roi.x + loc.x * (roi.width / 400.0) - 20), loc.y + roi.y);
+    //putText(src2, num, p2, FONT_HERSHEY_TRIPLEX, 0.5, Scalar(255, 255, 255), 1, LINE_AA);
 }
 
 void CodeRecognizer::detect_and_draw_orb_features(Mat& img) {
@@ -120,6 +172,7 @@ pair<vector<CodeRecognizer::Line>, int> CodeRecognizer::cluster(const std::vecto
     sort(a.begin(), a.end(),[this](const Line& a, const Line& b) { return compareByCentY(a, b); });
 
     b.push_back(a[0]);
+    std::cout<<b.size()<<std::endl;
 
     for (const auto& line : a) {
         if (abs(b[t].centy - line.centy) < 10) {
@@ -127,7 +180,8 @@ pair<vector<CodeRecognizer::Line>, int> CodeRecognizer::cluster(const std::vecto
             b[t].xl = min(b[t].xl, line.xl);
             b[t].xr = max(b[t].xr, line.xr);
             b[t].centx = static_cast<int>((b[t].xl + b[t].xr) / 2.0);
-        } else {
+        } 
+        else {
             b.push_back(line);
             ++t;
         }
@@ -145,44 +199,42 @@ string CodeRecognizer::code_rec(const Rect& roi, const vector<Line>& b, int cls_
         circle(src1, Point(b[i].centx, b[i].centy), 3, Scalar(0, 0, 255), 3);
         int width = b[i].xr - b[i].xl;
 
-        if (b[i].centy > 120) {
-            if (width < 90) {
-                if (b[i].centx < 110) {
-                    put_code(roi, "1", Point(b[i].xl, b[i].centy), src1, src2);
-                    head += '1';
-                } else if (b[i].centx < 200) {
-                    put_code(roi, "2", Point(b[i].xl, b[i].centy), src1, src2);
-                    head += '2';
-                } else if (b[i].centx < 290) {
-                    put_code(roi, "3", Point(b[i].xl, b[i].centy), src1, src2);
-                    head += '3';
-                } else {
-                    put_code(roi, "4", Point(b[i].xl, b[i].centy), src1, src2);
-                    head += '4';
-                }
-            } else if (width < 170) {
-                if (b[i].centx < 170) {
-                    put_code(roi, "5", Point(b[i].xl, b[i].centy), src1, src2);
-                    head += '5';
-                } else if (b[i].centx < 250) {
-                    put_code(roi, "6", Point(b[i].xl, b[i].centy), src1, src2);
-                    head += '6';
-                } else {
-                    put_code(roi, "7", Point(b[i].xl, b[i].centy), src1, src2);
-                    head += '7';
-                }
-            } else if (width < 270) {
-                if (b[i].centx < 220) {
-                    put_code(roi, "8", Point(b[i].xl, b[i].centy), src1, src2);
-                    head += '8';
-                } else {
-                    put_code(roi, "9", Point(b[i].xl, b[i].centy), src1, src2);
-                    head += '9';
-                }
+        if (width < 100) {
+            if (b[i].centx < 100) {
+                put_code(roi, "1", Point(b[i].xl, b[i].centy), src1, src2);
+                head += '1';
+            } else if (b[i].centx < 200) {
+                put_code(roi, "2", Point(b[i].xl, b[i].centy), src1, src2);
+                head += '2';
+            } else if (b[i].centx < 300) {
+                put_code(roi, "3", Point(b[i].xl, b[i].centy), src1, src2);
+                head += '3';
             } else {
-                put_code(roi, "0", Point(b[i].xl, b[i].centy), src1, src2);
-                head += '0';
+                put_code(roi, "4", Point(b[i].xl, b[i].centy), src1, src2);
+                head += '4';
             }
+        } else if (width < 170) {
+            if (b[i].centx < 170) {
+                put_code(roi, "5", Point(b[i].xl, b[i].centy), src1, src2);
+                head += '5';
+            } else if (b[i].centx < 250) {
+                put_code(roi, "6", Point(b[i].xl, b[i].centy), src1, src2);
+                head += '6';
+            } else {
+                put_code(roi, "7", Point(b[i].xl, b[i].centy), src1, src2);
+                head += '7';
+            }
+        } else if (width < 270) {
+            if (b[i].centx < 220) {
+                put_code(roi, "8", Point(b[i].xl, b[i].centy), src1, src2);
+                head += '8';
+            } else {
+                put_code(roi, "9", Point(b[i].xl, b[i].centy), src1, src2);
+                head += '9';
+            }
+        } else {
+            put_code(roi, "0", Point(b[i].xl, b[i].centy), src1, src2);
+            head += '0';
         }
     }
     return head;
@@ -264,7 +316,13 @@ Rect CodeRecognizer::roi_track(const Rect& roi, vector<Line>& lines) {
 
 Rect CodeRecognizer::processFrame(const Mat& frame) {
     auto start = chrono::high_resolution_clock::now();
-
+    roi=yolo_detect_and_return_roi(frame);
+    std::cout<<"roi:"<<roi<<std::endl;
+    if (roi.empty()) {
+        // Set a default roi
+        roi = Rect(430, 400, 200, 220); 
+        return roi;
+    }
     // 预处理
     pair<Mat, Mat> processed = pre_proc(roi, frame);
     Mat& resize_img = processed.first;
@@ -273,13 +331,17 @@ Rect CodeRecognizer::processFrame(const Mat& frame) {
     cv::rectangle(resize_img, roi, cv::Scalar(0, 255, 0), 2);
     // 霍夫变换
     vector<Vec4i> hough_lines;
-    HoughLinesP(rec_img_bw, hough_lines, 1, CV_PI / 180, 50, 50, 10);
+
+    HoughLinesP(rec_img_bw, hough_lines, 1, CV_PI / 180,100, 50, 10);
+
+    
 
     // 聚类
     pair<vector<Line>, int> clustering = cluster(hough_lines);
+
     lines = clustering.first;
     int cls_num = clustering.second;
-
+    
     // 识别
     rec_code = code_rec(roi, lines, cls_num, rec_img_bw, resize_img);
 
@@ -306,7 +368,10 @@ Rect CodeRecognizer::processFrame(const Mat& frame) {
     imshow("rec_img", rec_img_bw);
     imshow("resize_img",resize_img);
 
-    return roi;
+        
+   
+   return roi;
+    
 }
 
 Point2f CodeRecognizer::getFeaturePoint() const {

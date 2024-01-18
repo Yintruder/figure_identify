@@ -18,12 +18,12 @@ private:
     struct Line {
         int centx, centy, xl, xr;
     };
-
+    cv::dnn::Net yolo_net;
     cv::Rect roi;
     std::map<int, cv::Point2f> location_map;
     std::vector<Line> lines;
     int rightmost_line_x;
-
+    cv::Rect yolo_detect_and_return_roi(const cv::Mat& src,float blob_size);
     std::pair<cv::Mat, cv::Mat> pre_proc(const cv::Rect& roi, const cv::Mat& src);
     void put_code(const cv::Rect& roi, const std::string& num, const cv::Point& loc, cv::Mat& src1, cv::Mat& src2);
     void detect_and_draw_orb_features(cv::Mat& img);
@@ -35,6 +35,7 @@ private:
     bool compareByCentY(const Line& a, const Line& b);
     std::string rec_code;
     int location;
+    float yolo_conthreshold;
 };
 
 #endif // CODERECOGNIZER_H

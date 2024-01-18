@@ -231,7 +231,7 @@ FigureProject_IS_TOP_LEVEL:STATIC=ON
 FigureProject_SOURCE_DIR:STATIC=/home/yintruder/MonoProject/figure_identify
 
 //The directory containing a CMake configuration file for OpenCV.
-OpenCV_DIR:PATH=/usr/local/share/OpenCV
+OpenCV_DIR:PATH=/usr/local/opencv4/lib/cmake/opencv4
 
 
 ########################
@@ -384,5 +384,5 @@ CMAKE_UNAME:INTERNAL=/usr/bin/uname
 //ADVANCED property for variable: CMAKE_VERBOSE_MAKEFILE
 CMAKE_VERBOSE_MAKEFILE-ADVANCED:INTERNAL=1
 //Details about finding OpenCV
-FIND_PACKAGE_MESSAGE_DETAILS_OpenCV:INTERNAL=[/usr/local][v3.4.16()]
+FIND_PACKAGE_MESSAGE_DETAILS_OpenCV:INTERNAL=[/usr/local/opencv4][v4.8.0(4)]
 
